@@ -1,5 +1,4 @@
-# PDG21+
-
+# PDG21+
 PDG21+ is a hadron list that contains all (u->s quark-containing) hadrons
 listed on the Particle Data Booklet, along with their quantum numbers and
 properties. 
