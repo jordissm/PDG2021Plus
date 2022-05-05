@@ -16,7 +16,7 @@ def main():
     # Reads Excel source file.
     names = ['index','ID','Name','Mass(GeV)','Width(GeV)','Degeneracy',\
         'Baryon no.','Strangeness no.','Charm no.','Bottom no.','Isospin',\
-        'Electric charge','No. of decay channels','Mass upper limit',\
+        'I_3','Electric charge','No. of decay channels','Mass upper limit',\
         'Mass lower limit', 'Width upper limit', 'Width lower limit', 'Stars']
     df = pd.read_excel('PDG21Plus_master.xlsx', names=names, usecols=names[1:])
 
@@ -37,7 +37,7 @@ def main():
 
 #-----PLOTTING-----
     names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
-            'Strangeness no.','Charm no.','Bottom no.','Isospin',\
+            'Strangeness no.','Charm no.','Bottom no.','Isospin','I_3'\
             'Electric charge','No. of decay channels']
     #path = '../PDG2016/hadron_lists/PDG2016Plus_massorder.dat'
     #old_df = pd.read_table(path, sep='\t', header=None, \

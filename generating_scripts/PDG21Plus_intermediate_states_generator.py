@@ -11,7 +11,7 @@ sys.stdout.flush()
 
 #-----READ/PARSE-----
 names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
-        'Strangeness no.','Charm no.','Bottom no.','Isospin',\
+        'Strangeness no.','Charm no.','Bottom no.','Isospin','I_3',\
         'Electric charge','No. of decay channels']
 df = pd.read_table('../hadron_lists/full_decays/decays_PDG21Plus_massorder.dat', sep='\t', header=None,\
         names=names, na_filter=True)
@@ -25,7 +25,7 @@ particles_dictionary = particles_dictionary.to_dict()['Name']
 
 #-----DECAYS-----
 decays = df[df['No. of decay channels'].isnull()]
-decays = decays.iloc[:,:-4]
+decays = decays.iloc[:,:-5]
 decays.columns = ['ID(mother)', 'No. of daughter particles',\
                   'Branching ratio', 'ID#1', 'ID#2', 'ID#3', 'ID#4', 'ID#5']
 decays = decays.apply(pd.to_numeric)
