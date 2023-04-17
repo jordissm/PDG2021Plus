@@ -39,7 +39,7 @@ def main():
     names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
             'Strangeness no.','Charm no.','Bottom no.','Isospin',\
             'Electric charge','No. of decay channels']
-    path = '../../PDG16Plus/PDG2016Plus_massorder.dat'
+    paths = '../../PDG16Plus/PDG2016Plus_massorder.dat'
     old_df = pd.read_table(path, sep='\t', header=None, \
                            names=names, na_filter=True)
     #print(old_df)
