@@ -29,8 +29,8 @@ Complete list of particles sorted by mass.
 
 <p align="center">
 
-| PID | Particle name | Mass (GeV) | Width (GeV) | Spin degeneracy | Baryon number | Strangeness | Charm number | Bottom number | Isospin | Electric charge | Number of decay channels |
-| --- | ------------- | ---------- | ----------- | --------------- | ------------- | ----------- | ------------ | ------------- | ------- | --------------- | --------------- -------- |
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
 
