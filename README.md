@@ -1,11 +1,18 @@
 # PDG21+
+[![DOI](https://doi.org/10.31349/SuplRevMexFis.3.040921)](https://doi.org/10.31349/SuplRevMexFis.3.040921)
+## Description
 <p align="justify">
 
 PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
-Review of Particle Physics, along with their quantum numbers and properties.
+Review of Particle Physics, along with their quantum numbers and decays. A
+collection of Python scripts is provided to help formatting the list for use
+with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
+[SMASH](https://github.com/smash-transport/smash), and other post-processing tools.
 
-A collection of Python scripts are provided to help formatting the list for use
-with ThermalFIST, SMASH, and other post-processing tools.
+Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/SuplRevMexFis.3.040921) for details and cite this reference when using the list.
+
+Report issues at [PDG21+/issues](https://github.com/jordissm/PDG21Plus/issues) or contact us by
+email at jordis2@illinois.edu
 
 </p>
 
