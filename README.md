@@ -32,18 +32,38 @@ Contains the PDG21+ and other commonly used lists.
 
 </p>
 
+### PDG21+
+<p align="justify">
+
+`hadron_lists/PDG21Plus/PDG21Plus_massorder.dat`
+
+`hadron_lists/PDG21Plus/PDG21Plus_ThFIST.dat`
+
+`hadron_lists/PDG21Plus/SMASH_particles.txt` lists most of the particles of the
+full PDG21+ list in the format that SMASH takes as input. Notice that some
+hadrons have been omitted due to their lack of information.
+
+`hadron_lists/PDG21Plus/SMASH_decaymodes.txt` includes a list all the decaying
+particles in the PDG21+ list and their branching ratios. All 3- and 4-daughter
+decays are modeled via some intermediate state, with the exeption of $\eta$,
+which has been explicitly treated as a 3-body decay. All the decay channels
+that have been parametrized by an intermediate state and violate mass
+conservation have been omitted.
+
+</p>
+
+### PDG16+
+<p align="justify">
+
+`hadron_lists/PDG16Plus/PDG16Plus_massorder.dat`
+
+`hadron_lists/PDG16Plus/PDG16Plus_ThFIST.dat`
+
 ### SMASH
 <p align="justify">
 
-`hadron_lists/SMASH_particles.txt` lists most of the particles of the full
-PDG21+ list in the format that SMASH takes as input. Notice that some hadrons
-have been omitted due to their lack of information.
+`particles.txt`
 
-`hadron_lists/SMASH_decaymodes.txt` includes a list all the decaying particles
-in the PDG21+ list and their branching ratios. All 3- and 4-daughter decays are
-modeled via some intermediate state, with the exeption of $\eta$, which has
-been explicitly treated as a 3-body decay. All the decay channels that have
-been parametrized by an intermediate state and violate mass conservation have
-been omitted.
+`decaymodes.txt`
 
 </p>
