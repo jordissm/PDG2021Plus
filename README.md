@@ -53,7 +53,9 @@ Complete list of particles (without anti-particles) sorted by mass.
 <br>
 
 `SMASH_particles.txt`\
-Complete list of particles sorted by mass.
+Lists most of the particles of the full PDG21+ list in the format that SMASH
+takes as input. Notice that some hadrons have been omitted due to their lack of
+information.
 <font size="1">
 <p align="center">
 
@@ -62,27 +64,23 @@ Complete list of particles sorted by mass.
 
 </p>
 </font>
-Lists most of the particles of the full PDG21+ list in the format that SMASH
-takes as input. Notice that some hadrons have been omitted due to their lack of
-information.
 
 <br>
 
 `SMASH_decaymodes.txt`\
-Complete list of particles sorted by mass.
-<font size="1">
-<p align="center">
-
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
-
-</p>
-</font>
 Includes a list all the decaying particles in the PDG21+ list and their
 branching ratios. All 3- and 4-daughter decays are modeled via some
 intermediate state, with the exeption of $\eta$, which has been explicitly
 treated as a 3-body decay. All the decay channels that have been parametrized
 by an intermediate state and violate mass conservation have been omitted.
+<font size="1">
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
+</font>
 
 <br>
 <br>
