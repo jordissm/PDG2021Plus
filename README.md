@@ -12,10 +12,8 @@ with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
 Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/SuplRevMexFis.3.040921) for details and cite when using the list.
 
 <br>
-<br>
 
-# Contents
-## Generating scripts
+# Quickstart
 The list is stored in `xlsx` format for easy access but a set but a set of
 scripts are provided in order to cross-check that the listed properties of
 particles respect physical laws and formats it to be used in Thermal-FIST and
@@ -32,6 +30,7 @@ produce Figs. 1 and 2 of the [paper](https://doi.org/10.31349/SuplRevMexFis.3.04
 
 <br>
 
+# Output
 ## Hadron lists
 ### Particles
 `PDG21Plus_massorder.dat`\
