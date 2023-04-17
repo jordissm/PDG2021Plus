@@ -1,16 +1,17 @@
 # PDG21+
-PDG21+ is a hadron list that contains all hadrons (no charmness) listed
-on the Review of Particle Physics, along with their quantum numbers and
-properties.
+<p align="center">
+PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
+Review of Particle Physics, along with their quantum numbers and properties.
 
-A collection of Python scripts are provided to help formatting the list
-for use with ThermalFIST, SMASH, and other post-processing tools.
+A collection of Python scripts are provided to help formatting the list for use
+with ThermalFIST, SMASH, and other post-processing tools.
+</p>
 
 ## Contents
 ### Generating scripts
 The list is stored in `xlsx` format for easy access but a set but a set
-of scripts are provided in order to cross-check that the listed proper-
-ties of particles respect physical laws and formats it to be used
+of scripts are provided in order to cross-check that the listed
+properties of particles respect physical laws and formats it to be used
 in Thermal-FIST and other models.
 
 After updating the master list, execute the following lines:
