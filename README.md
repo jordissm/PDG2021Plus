@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="misc/icon.png" width="800" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background">
+  <img src="misc/icon.png" width="800" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background" unselectable="on">
 </p>
 
 # Description
