@@ -26,7 +26,6 @@ Contains the PDG21+ and other commonly used lists.
 ### PDG21+
 `PDG21Plus_massorder.dat`\
 Complete list of particles sorted by mass.
-
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
@@ -35,13 +34,34 @@ Complete list of particles sorted by mass.
 </p>
 
 `PDG21Plus_ThFIST.dat`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 
 `SMASH_particles.txt`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 Lists most of the particles of the full PDG21+ list in the format that SMASH
 takes as input. Notice that some hadrons have been omitted due to their lack of
 information.
 
 `SMASH_decaymodes.txt`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 Includes a list all the decaying particles in the PDG21+ list and their
 branching ratios. All 3- and 4-daughter decays are modeled via some
 intermediate state, with the exeption of $\eta$, which has been explicitly
@@ -50,12 +70,40 @@ by an intermediate state and violate mass conservation have been omitted.
 
 ### PDG16+
 `PDG16Plus_massorder.dat`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 
 `PDG16Plus_ThFIST.dat`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 
 ### SMASH
 `particles.txt`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 
 `decaymodes.txt`\
+Complete list of particles sorted by mass.
+<p align="center">
+
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
 
 </p>
