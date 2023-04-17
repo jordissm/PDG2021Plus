@@ -25,8 +25,14 @@ Contains the PDG21+ and other commonly used lists.
 
 ### PDG21+
 `PDG21Plus_massorder.dat`\
-Complete list of particles sorted by mass. Columns are
-    |    PID    |    Particle name    |    Mass (GeV)    |    Width (GeV)    |
+Complete list of particles sorted by mass.
+
+<p align="center">
+
+| PID | Particle name | Mass (GeV) | Width (GeV) | Spin degeneracy | Baryon number | Strangeness | Charm number | Bottom number | Isospin | Electric charge | Number of decay channels |
+| --- | ------------- | ---------- | ----------- | --------------- | ------------- | ----------- | ------------ | ------------- | ------- | --------------- | --------------- -------- |
+
+</p>
 
 `PDG21Plus_ThFIST.dat`\
 
