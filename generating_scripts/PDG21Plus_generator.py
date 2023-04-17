@@ -37,13 +37,14 @@ def main():
 
 #-----PLOTTING-----
     names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
-            'Strangeness no.','Charm no.','Bottom no.','Isospin','I_3'\
+            'Strangeness no.','Charm no.','Bottom no.','Isospin',\
             'Electric charge','No. of decay channels']
-    #path = '../PDG2016/hadron_lists/PDG2016Plus_massorder.dat'
-    #old_df = pd.read_table(path, sep='\t', header=None, \
-    #                       names=names, na_filter=True)
-    #plot_mass_spectra_new(df)
-    #plot_mass_spectra_old_vs_new(old_df,df)
+    path = '../../PDG16Plus/PDG2016Plus_massorder.dat'
+    old_df = pd.read_table(path, sep='\t', header=None, \
+                           names=names, na_filter=True)
+    #print(old_df)
+    plot_mass_spectra_new(df)
+    plot_mass_spectra_old_vs_new(df,old_df,old_df)
 
 #-----FILTERING-----
     df = floats_to_ints(df)
