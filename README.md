@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="icon.png" width="350" title="hover text">
-  <img src="icon.png" width="350" alt="accessibility text">
+  <img src="icon.png" width="500" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background">
 </p>
 # PDG21+
 ## Description
