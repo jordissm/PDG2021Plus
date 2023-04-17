@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "PDG21+ Hadron list"
+version = "1.0.0"
+authors = [
+    {name="Jordi Salinas San Martin", email="jordis2@illinois.edu"},
+]
+description = "This set of scripts generates formatted hadron lists for use with Thermal-FIST"
+readme = "README.md"
+license = "MIT"
+dependencies = [
+    pandas
+]
