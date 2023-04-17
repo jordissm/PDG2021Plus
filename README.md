@@ -132,6 +132,12 @@ Decays
 <font size="1">
 <p align="center">
 
-a
+|        PID        |     |                       |                       |
+| :---------------: | :-: | :-------------------: | :-------------------: |
+|     $N(1520)$     |     |                       |                       |
+|__Branching ratio__|__L__|__Name of daughter #1__|__Name of daughter #2__|
+|      0.69641      |  2  |          $N$          |         $\pi$         |
+|      0.30359      |  0  |       $\Delta$        |         $\pi$         |
+
 </p>
 </font>
