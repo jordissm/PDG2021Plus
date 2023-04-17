@@ -31,8 +31,12 @@ Complete list of particles (including anti-particles) sorted by mass.
 <font size="1">
 <p align="center">
 
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charmness | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
+|  PID  |          Name          | Mass (GeV) | Width (GeV) | Spin deg. |  $B$  | $S$ | Charmness | Bottom no. | Isospin | $I_z$ | $Q$ | No. of decay channels |
+|  :-:  | :--------------------: | :--------: | :---------: | :-------: |  :-:  |  -  | :-------: | :--------: | :-----: |  :-:  | :-: | :-------------------: |
+|  2124 |      $N^+(1520)$       |   1.515    |    0.11     |     4     |   1   |  0  |     0     |     0      |   0.5   |  0.5  |  1  |           8           |
+|  1214 |      $N^0(1520)$       |   1.515    |    0.11     |     4     |   1   |  0  |     0     |     0      |   0.5   | -0.5  |  0  |           8           |
+| -1214 | $\overline{N}^0(1520)$ |   1.515    |    0.11     |     4     |  -1   |  0  |     0     |     0      |   0.5   |  0.5  |  0  |           8           |
+| -2124 | $\overline{N}^-(1520)$ |   1.515    |    0.11     |     4     |  -1   |  0  |     0     |     0      |   0.5   | -0.5  | -1  |           8           |
 
 </p>
 </font>
@@ -44,8 +48,11 @@ Complete list of particles (without anti-particles) sorted by mass.
 <font size="1">
 <p align="center">
 
-| PID | Name | Stable flag | Mass (GeV) | Spin deg. | Statistics | B | Q | S | Charmness | Absolute S | Absolute Charmness | Width (GeV) | Threshold (GeV) |
-| - | - | - | - | - | - | - | - | - | - | - | - | - | - |
+| PID  |    Name     | Stable flag | Mass (GeV) | Spin deg. | Statistics | $B$ | $Q$ | $S$ | Charmness | Absolute Strangeness | Absolute Charmness | Width (GeV) | Threshold (GeV) |
+| :--: | :---------: | :---------: | :--------: | :-------: | :--------: |  -  |  -  |  -  | :-------: | :------------------: | :----------------: | :---------: | :-------------: |
+| 2124 | $N^+(1520)$ |      0      |   1.515    |     4     |     1      |  1  |  1  |  0  |     0     |          0           |         0          |    0.11     |        0        |
+| 1214 | $N^0(1520)$ |      0      |   1.515    |     4     |     1      |  1  |  0  |  0  |     0     |          0           |         0          |    0.11     |        0        |
+
 
 </p>
 </font>
@@ -59,8 +66,9 @@ information.
 <font size="1">
 <p align="center">
 
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
+|    Name   | Mass (GeV) | Width (GeV) | Parity | PIDs |      |
+| :-------: | :--------: | :---------: | :----: | :--: | :--: |
+| $N(1520)$ |   1.515    |    0.110    |   –    | 1214 | 2124 |
 
 </p>
 </font>
@@ -81,57 +89,3 @@ by an intermediate state and violate mass conservation have been omitted.
 
 </p>
 </font>
-
-<br>
-<br>
-
-### Hadron lists / PDG16+
-`PDG16Plus_massorder.dat`\
-Complete list of particles sorted by mass.
-<font size="1">
-<p align="center">
-
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
-
-</p>
-</font>
-<br>
-
-`PDG16Plus_ThFIST.dat`\
-Complete list of particles sorted by mass.
-<font size="1">
-<p align="center">
-
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
-
-</p>
-</font>
-<br>
-<br>
-
-### Hadron lists / SMASH
-`particles.txt`\
-Complete list of particles sorted by mass.
-<font size="1">
-<p align="center">
-
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
-
-</p>
-</font>
-<br>
-
-`decaymodes.txt`\
-Complete list of particles sorted by mass.
-<font size="1">
-<p align="center">
-
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
-
-</p>
-</font>
-<br>
