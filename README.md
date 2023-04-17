@@ -8,9 +8,6 @@ with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
 
 Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/SuplRevMexFis.3.040921) for details and cite when using the list.
 
-Report issues on the [issues](https://github.com/jordissm/PDG21Plus/issues) section or contact us by
-email at jordis2@illinois.edu.
-
 ## Contents
 ### Generating scripts
 The list is stored in `xlsx` format for easy access but a set but a set of
