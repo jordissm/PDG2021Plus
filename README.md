@@ -19,13 +19,17 @@ particles respect physical laws and formats it to be used in Thermal-FIST and
 other models.
 
 After updating the master list, execute the following lines:
-
-    cd generating_scripts
-    python3 PDG21Plus_generator.py
+```shell
+cd generating_scripts
+python3 PDG21Plus_generator.py
+```
+This will generate all versions of the PDG21+ hadron list on the `hadron_lists`
+folder. Optionally, the script can be executed with the `--plot` option to
+produce Figs. 1 and 2 of the [paper](https://doi.org/10.31349/SuplRevMexFis.3.040921).
 
 <br>
 
-### Hadron lists / PDG21+
+### Hadron lists –– Particles
 `PDG21Plus_massorder.dat`\
 Complete list of particles (including anti-particles) sorted by mass.
 <font size="1">
@@ -53,7 +57,6 @@ Complete list of particles (without anti-particles) sorted by mass.
 | 2124 | $N^+(1520)$ |      0      |   1.515    |     4     |     1      |  1  |  1  |  0  |     0     |          0           |         0          |    0.11     |        0        |
 | 1214 | $N^0(1520)$ |      0      |   1.515    |     4     |     1      |  1  |  0  |  0  |     0     |          0           |         0          |    0.11     |        0        |
 
-
 </p>
 </font>
 
@@ -75,16 +78,39 @@ information.
 
 <br>
 
-`SMASH_decaymodes.txt`\
-Includes a list all the decaying particles in the PDG21+ list and their
-branching ratios. All 3- and 4-daughter decays are modeled via some
-intermediate state, with the exeption of $\eta$, which has been explicitly
-treated as a 3-body decay. All the decay channels that have been parametrized
-by an intermediate state and violate mass conservation have been omitted.
+### Hadron lists –– Decays
+`decays_PDG21Plus_massorder.dat`\
+Decays
 <font size="1">
 <p align="center">
 
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
+</font>
+
+<br>
+
+`decays_PDG21Plus_ThFIST.dat`\
+Decays
+<font size="1">
+<p align="center">
+
+| - | - | - | - | - | - | - | - | - | - | - | - |
+| - | - | - | - | - | - | - | - | - | - | - | - |
+
+</p>
+</font>
+
+<br>
+
+`SMASH_decaymodes.txt`\
+Decays
+<font size="1">
+<p align="center">
+
+| - | - | - | - | - | - | - | - | - | - | - | - |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
