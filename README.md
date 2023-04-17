@@ -39,11 +39,13 @@ Contains the PDG21+ and other commonly used lists.
 
 `hadron_lists/PDG21Plus/PDG21Plus_ThFIST.dat`
 
-`hadron_lists/PDG21Plus/SMASH_particles.txt` lists most of the particles of the
+`hadron_lists/PDG21Plus/SMASH_particles.txt`
+Lists most of the particles of the
 full PDG21+ list in the format that SMASH takes as input. Notice that some
 hadrons have been omitted due to their lack of information.
 
-`hadron_lists/PDG21Plus/SMASH_decaymodes.txt` includes a list all the decaying
+`hadron_lists/PDG21Plus/SMASH_decaymodes.txt`
+Includes a list all the decaying
 particles in the PDG21+ list and their branching ratios. All 3- and 4-daughter
 decays are modeled via some intermediate state, with the exeption of $\eta$,
 which has been explicitly treated as a 3-body decay. All the decay channels
