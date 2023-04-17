@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" width="350" title="hover text">
+  <img src="icon.png" width="350" alt="accessibility text">
+</p>
 # PDG21+
 ## Description
 PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
