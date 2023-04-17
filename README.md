@@ -8,6 +8,9 @@ with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
 
 Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/SuplRevMexFis.3.040921) for details and cite when using the list.
 
+<br>
+<br>
+
 ## Contents
 ### Generating scripts
 The list is stored in `xlsx` format for easy access but a set but a set of
@@ -20,90 +23,117 @@ After updating the master list, execute the following lines:
     cd generating_scripts
     python3 PDG21Plus_generator.py
 
-### Hadron lists
-Contains the PDG21+ and other commonly used lists.
+<br>
 
-### PDG21+
+### Hadron lists / PDG21+
 `PDG21Plus_massorder.dat`\
-Complete list of particles sorted by mass.
+Complete list of particles (including anti-particles) sorted by mass.
+<font size="1">
 <p align="center">
 
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
+| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charmness | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
+
+<br>
 
 `PDG21Plus_ThFIST.dat`\
-Complete list of particles sorted by mass.
+Complete list of particles (without anti-particles) sorted by mass.
+<font size="1">
 <p align="center">
 
-| PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
-| - | - | - | - | - | - | - | - | - | - | - | - |
+| PID | Name | Stable flag | Mass (GeV) | Spin deg. | Statistics | B | Q | S | Charmness | Absolute S | Absolute Charmness | Width (GeV) | Threshold (GeV) |
+| - | - | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
+
+<br>
 
 `SMASH_particles.txt`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
 Lists most of the particles of the full PDG21+ list in the format that SMASH
 takes as input. Notice that some hadrons have been omitted due to their lack of
 information.
 
+<br>
+
 `SMASH_decaymodes.txt`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
 Includes a list all the decaying particles in the PDG21+ list and their
 branching ratios. All 3- and 4-daughter decays are modeled via some
 intermediate state, with the exeption of $\eta$, which has been explicitly
 treated as a 3-body decay. All the decay channels that have been parametrized
 by an intermediate state and violate mass conservation have been omitted.
 
-### PDG16+
+<br>
+<br>
+
+### Hadron lists / PDG16+
 `PDG16Plus_massorder.dat`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
+<br>
 
 `PDG16Plus_ThFIST.dat`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
+<br>
+<br>
 
-### SMASH
+### Hadron lists / SMASH
 `particles.txt`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
+</font>
+<br>
 
 `decaymodes.txt`\
 Complete list of particles sorted by mass.
+<font size="1">
 <p align="center">
 
 | PID | Name | Mass (GeV) | Width (GeV) | Spin deg. | B | S | Charm no. | Bottom no. | Isospin | Q | No. of decay channels |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 
 </p>
-
-</p>
+</font>
+<br>
