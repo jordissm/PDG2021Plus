@@ -2,7 +2,7 @@
   <img src="icon.png" width="800" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background">
 </p>
 
-## Description
+# Description
 PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
 Review of Particle Physics, along with their quantum numbers and decays. A
 collection of Python scripts is provided to help formatting the list for use
@@ -14,8 +14,8 @@ Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/Supl
 <br>
 <br>
 
-## Contents
-### Generating scripts
+# Contents
+## Generating scripts
 The list is stored in `xlsx` format for easy access but a set but a set of
 scripts are provided in order to cross-check that the listed properties of
 particles respect physical laws and formats it to be used in Thermal-FIST and
@@ -32,7 +32,8 @@ produce Figs. 1 and 2 of the [paper](https://doi.org/10.31349/SuplRevMexFis.3.04
 
 <br>
 
-### Hadron lists –– Particles
+## Hadron lists
+### Particles
 `PDG21Plus_massorder.dat`\
 Complete list of particles (including anti-particles) sorted by mass.
 <font size="1">
@@ -80,8 +81,9 @@ information.
 </font>
 
 <br>
+<br>
 
-### Hadron lists –– Decays
+### Decays
 `decays_PDG21Plus_massorder.dat`\
 Decays
 <font size="1">
