@@ -1,6 +1,7 @@
 <p align="center">
-  <img src="icon.png" width="500" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background">
+  <img src="icon.png" width="800" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background">
 </p>
+
 # PDG21+
 ## Description
 PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
