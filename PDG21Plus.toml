@@ -11,5 +11,7 @@ description = "This set of scripts generates formatted hadron lists for use with
 readme = "README.md"
 license = "MIT"
 dependencies = [
+    os
+    sys
     pandas
 ]
