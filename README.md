@@ -26,7 +26,7 @@ Contains the PDG21+ and other commonly used lists.
 ### PDG21+
 `PDG21Plus_massorder.dat`\
 Complete list of particles sorted by mass. Columns are
-|    PID    |    Particle name    |    Mass (GeV)    |    Width (GeV)    |
+    |    PID    |    Particle name    |    Mass (GeV)    |    Width (GeV)    |
 
 `PDG21Plus_ThFIST.dat`\
 
