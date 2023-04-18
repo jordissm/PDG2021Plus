@@ -13,6 +13,7 @@ PDG21Plus_master.xlsx
 import os
 import sys
 import pandas as pd
+import numpy as np
 
 #.........................
 # Import custom modules
@@ -55,15 +56,38 @@ def main():
 
 #-----PLOTTING-----
     if '--plot' in sys.argv[:]:
-        '''names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
-            'Strangeness no.','Charm no.','Bottom no.','Isospin',\
-            'Electric charge','No. of decay channels']
-        path = '../../PDG16Plus/PDG2016Plus_massorder.dat'
-        old_df = pd.read_table(path, sep='\t', header=None, \
-                           names=names, na_filter=True)
-        #print(old_df)
-        plot_mass_spectra_new(df)
-        plot_mass_spectra_old_vs_new(df,old_df,old_df)'''
+        particle_lists = [df]
+        script_path = os.path.dirname(__file__)
+        parent_path = os.path.dirname(script_path)
+
+        # Reads PDG16+ list
+        PDG16Plus_cols = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy',\
+                          'Baryon no.','Strangeness no.','Charm no.',\
+                          'Bottom no.','Isospin','Electric charge',\
+                          'No. of decay channels']
+
+        PDG16Plus_path = os.path.join(parent_path, 'hadron_lists/PDG16Plus/PDG2016Plus_massorder.dat')
+        if os.path.isfile(PDG16Plus_path):
+            PDG16Plus_df = pd.read_table(PDG16Plus_path, sep='\t', header=None, \
+                                         names=PDG16Plus_cols, na_filter=True)
+            particle_lists.append(PDG16Plus_df)
+
+        # Reads SMASH list
+        SMASH_cols = ['Name','Mass(GeV)','Width(GeV)','Parity',\
+                      'PID1','PID2','PID3','PID4']
+        SMASH_path = os.path.join(parent_path, 'hadron_lists/SMASH/particles.txt')
+        if os.path.isfile(SMASH_path):
+            SMASH_df = pd.read_table(SMASH_path, delim_whitespace=True, header=None,\
+                                     names=SMASH_cols, na_filter=True, comment='#')
+            particle_lists.append(SMASH_df)
+            # Drop leptons and heavy flavor baryons
+            indexElectron = SMASH_df[SMASH_df['Name']=='e⁻'].index.item()
+            indexFinal = SMASH_df.last_valid_index()
+            indicesToDrop = np.arange(indexElectron, indexFinal+1)
+            SMASH_df.drop(indicesToDrop, inplace=True)
+
+        pdg_plot.plot_mass_spectrum(df)
+        pdg_plot.plot_mass_spectra_comparison(particle_lists)
 
 #-----FILTERING-----
     df = pdg_format.floats_to_ints(df)
