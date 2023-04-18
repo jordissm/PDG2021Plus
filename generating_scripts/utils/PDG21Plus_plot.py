@@ -248,7 +248,7 @@ def plot_mass_spectrum(input_df):
     parent_path = os.path.dirname(script_path)
     output_path = os.path.join(parent_path, 'plots/')
     os.makedirs(output_path, exist_ok=True)
-    fname = os.path.join(output_path, 'Fig_PDG21Plus_spectrum.pdf')
+    fname = os.path.join(output_path, 'Fig_PDG21Plus_mass_spectrum.pdf')
     plt.savefig(fname=fname, format='pdf')
     #plt.show()
 
