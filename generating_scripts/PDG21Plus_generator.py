@@ -1,13 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+File: PDG21Plus_generator.py
+
+Description: Generates machine-readable files for SMASH and Thermal-FIST from
+PDG21Plus_master.xlsx
+"""
+
+#.........................
+# Import  standard modules
 import os
 import sys
 import pandas as pd
-from PDG21Plus_crosschecking_tool import *
-from PDG21Plus_formatting_tool import *
-from PDG21Plus_plotting_tool import *
 
-os.system('clear')
+#.........................
+# Import custom modules
+import utils.PDG21Plus_tests as pdg_tests
+import utils.PDG21Plus_process as pdg_process
+import utils.PDG21Plus_format as pdg_format
+import utils.PDG21Plus_plot as pdg_plot
+
+#------------------------------------------------------------------------------
 
 def main():
+    os.system('clear')
+
 #-----START MESSAGE-----
     sys.stdout.write('>Preparing lists... \n')
     sys.stdout.flush()
@@ -22,11 +40,11 @@ def main():
 
 #-----PROCESSING-----
     # Calculates # of decay channels.
-    df = build_decay_channel_number(df)
+    df = pdg_process.build_decay_channel_number(df)
 
 #-----TESTS-----
     # Run all tests. Program continues only if all are passed succesfully.
-    tests_outcome = all_tests(df)
+    tests_outcome = pdg_tests.all_tests(df)
     if tests_outcome[1] == True:
         pass
     else:
@@ -36,40 +54,55 @@ def main():
         sys.exit('>Lists were not created')
 
 #-----PLOTTING-----
-    names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
+    if '--plot' in sys.argv[:]:
+        '''names = ['ID','Name','Mass(GeV)','Width(GeV)','Degeneracy','Baryon no.',\
             'Strangeness no.','Charm no.','Bottom no.','Isospin',\
             'Electric charge','No. of decay channels']
-    paths = '../../PDG16Plus/PDG2016Plus_massorder.dat'
-    old_df = pd.read_table(path, sep='\t', header=None, \
+        path = '../../PDG16Plus/PDG2016Plus_massorder.dat'
+        old_df = pd.read_table(path, sep='\t', header=None, \
                            names=names, na_filter=True)
-    #print(old_df)
-    plot_mass_spectra_new(df)
-    plot_mass_spectra_old_vs_new(df,old_df,old_df)
+        #print(old_df)
+        plot_mass_spectra_new(df)
+        plot_mass_spectra_old_vs_new(df,old_df,old_df)'''
 
 #-----FILTERING-----
-    df = floats_to_ints(df)
+    df = pdg_format.floats_to_ints(df)
     df = df.drop(columns=['Mass upper limit','Mass lower limit'])
     df = df.drop(columns=['Width upper limit','Width lower limit'])
     df = df.drop(columns=['Stars'])
 
 #-----FORMATTING-----
+    #--PARTICLES--
+    df_PDG21Plus_massorder_particles = pdg_format.massorder_particles_format(df)
+    df_PDG21Plus_ThFIST_particles = pdg_format.ThFIST_particles_format(df)
+    #--DECAYS--
     #--massorder--
-    df_PDG21Plus_massorder_parents = massorder_parents_format(df)
-    df_PDG21Plus_massorder_decays = massorder_decays_format(df)
+    df_PDG21Plus_massorder_full_decays = pdg_format.massorder_full_decays_format(df)
+    #df_PDG21Plus_massorder_intermediate_decays = pdg_format.massorder_intermediate_decays_format(df)
     #--ThFIST--
-    df_PDG21Plus_ThFIST_parents = ThFIST_parents_format(df)
-    df_PDG21Plus_ThFIST_decays = ThFIST_decays_format(df)
+    df_PDG21Plus_ThFIST_full_decays = pdg_format.ThFIST_full_decays_format(df)
+    #df_PDG21Plus_ThFIST_intermediate_decays = pdg_format.ThFIST_intermediate_decays_format(df)
 
 #-----WRITE OUTPUT FILE(S)-----
-    header = None      # True or None.
-    os.system(' '.join(['mkdir -p',save_path]))
-    os.system(''.join(['rm ',save_path,'*.dat']))
+    header = False      # True or False.
+    script_path = os.path.dirname(__file__)
+    parent_path = os.path.dirname(script_path)
+    output_path = os.path.join(parent_path, 'hadron_lists/PDG21Plus/')
+    decays_full_path = os.path.join(output_path, 'full_decays/')
+    decays_intermediate_path = os.path.join(output_path, 'intermediate_decays/')
+    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(decays_full_path, exist_ok=True)
+    os.makedirs(decays_intermediate_path, exist_ok=True)
+    #--PARTICLES--
+    pdg_format.save_PDG21Plus_massorder_particles_df(df_PDG21Plus_massorder_particles, output_path, header)
+    pdg_format.save_PDG21Plus_ThFIST_particles_df(df_PDG21Plus_ThFIST_particles, output_path, header)
+    #--DECAYS--
     #--massorder--
-    save_PDG21Plus_massorder_parents_df(df_PDG21Plus_massorder_parents, header)
-    save_PDG21Plus_massorder_decays_df(df_PDG21Plus_massorder_decays, header)
+    pdg_format.save_PDG21Plus_massorder_decays_df(df_PDG21Plus_massorder_full_decays, decays_full_path, header)
+    #pdg_format.save_PDG21Plus_massorder_decays_df(df_PDG21Plus_massorder_intermediate_decays, decays_intermediate_path, header)
     #--ThFIST--
-    save_PDG21Plus_ThFIST_parents_df(df_PDG21Plus_ThFIST_parents, header)
-    save_PDG21Plus_ThFIST_decays_df(df_PDG21Plus_ThFIST_decays, header)
+    pdg_format.save_PDG21Plus_ThFIST_decays_df(df_PDG21Plus_ThFIST_full_decays, decays_full_path, header)
+    #pdg_format.save_PDG21Plus_ThFIST_decays_df(df_PDG21Plus_ThFIST_intermediate_decays, decays_intermediate_path, header)
 
 #-----END MESSAGE-----
     sys.stdout.write('>PDG lists created succesfully :) \n')

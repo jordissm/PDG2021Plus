@@ -1,7 +1,6 @@
 import os
 import sys
 import pandas as pd
-import math
 import numpy as np
 from PDG21Plus_intermediate_states_formatting_tool import *
 
