@@ -9,7 +9,7 @@ collection of Python scripts is provided to help formatting the list for use
 with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
 [SMASH](https://github.com/smash-transport/smash), and other post-processing tools.
 
-Please see [Supl. Rev. Mex. Fis. 3, 040921 (2022)](https://doi.org/10.31349/SuplRevMexFis.3.040921) for details and cite when using the list.
+Please see [arXiv:2309.01737 (2022)](https://arxiv.org/abs/2309.01737) for details and cite when using the list.
 
 <br>
 
