@@ -12,8 +12,8 @@ among applications.
 
 ## List and Decays files
 
-One of the key inputs of Thermal-FIST is the hadron particle list, along with particle quantum numbers, properties (mass, width, etc.), and decays.
+One of the key inputs of Thermal-FIST is the hadron particle list, along with particle quantum numbers, properties (mass, width, etc.), and decays. These are specified in two separate files (`list.dat` and `decays.dat`)
 
-### Particle list
+### Particle list (`list.dat`)
 
-### Decays
+### Decays (`decays.dat`)
