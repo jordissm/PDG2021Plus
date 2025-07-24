@@ -1,4 +1,4 @@
-# PDG2021+
+# PDG2021+ hadronic particle list
 
 <p align="center">
   <img
