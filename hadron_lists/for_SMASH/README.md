@@ -6,8 +6,8 @@
 
 ## List and Decays files
 
-One of the key inputs of SMASH is the hadron particle list, along with particle quantum numbers, properties (mass, width, etc.), and decays. These are specified in two separate files (`list.dat` and `decays.dat`)
+One of the key inputs of SMASH is the hadron particle list, along with particle quantum numbers, properties (mass, width, etc.), and decays. These are specified in two separate files (`particles.txt` and `decaymodes.txt`)
 
-### Particle list (`list.dat`)
+### Particle list (`particles.txt`)
 
-### Decays (`decays.dat`)
+### Decays (`decaymodes.txt`)
