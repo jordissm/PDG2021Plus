@@ -1,10 +1,16 @@
+# PDG2021+
+
 <p align="center">
-  <img src="misc/icon.png" width="800" title="PDG21+" alt="Header that has the name 'PDG21+' with colored particles on the background" unselectable="on">
+  <img
+  src="misc/icon.png"\
+  width="800"\
+  title="PDG21+"\
+  alt="Header that has the name 'PDG21+' with colored particles on the background" unselectable="on">
 </p>
 
-# Description
-PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the 
-Review of Particle Physics, along with their quantum numbers and decays. A
+## Description
+
+PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the Review of Particle Physics, along with their quantum numbers and decays. A
 collection of Python scripts is provided to help formatting the list for use
 with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
 [SMASH](https://github.com/smash-transport/smash), and other post-processing tools.
@@ -13,26 +19,32 @@ Please see [arXiv:2309.01737 (2022)](https://arxiv.org/abs/2309.01737) for detai
 
 <br>
 
-# Quickstart
+## Quickstart
+
 The list is stored in `xlsx` format for easy access but a set but a set of
 scripts are provided in order to cross-check that the listed properties of
 particles respect physical laws and formats it to be used in Thermal-FIST and
 other models.
 
 After updating the master list, execute the following lines:
-```shell
+
+```terminal
 cd generating_scripts
 python3 PDG21Plus_generator.py
 ```
+
 This will generate all versions of the PDG21+ hadron list on the `hadron_lists`
 folder. Optionally, the script can be executed with the `--plot` option to
 produce Figs. 1 and 2 of the [paper](https://doi.org/10.31349/SuplRevMexFis.3.040921).
 
 <br>
 
-# Output
-## Hadron lists
+## Output
+
+### Hadron lists
+
 ### Particles
+
 `PDG21Plus_massorder.dat`\
 Complete list of particles (including anti-particles) sorted by mass.
 <font size="1">
@@ -83,6 +95,7 @@ information.
 <br>
 
 ### Decays
+
 `decays_PDG21Plus_massorder.dat`\
 Decays
 <font size="1">
