@@ -10,14 +10,10 @@
 
 ## Description
 
-PDG21+ is a hadron list that contains all hadrons (no charmness) listed on the Review of Particle Physics, along with their quantum numbers and decays. A
-collection of Python scripts is provided to help formatting the list for use
-with [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
-[SMASH](https://github.com/smash-transport/smash), and other post-processing tools.
+PDG2021+ is a hadron list that contains all hadrons (up to strange flavor) listed on the Review of Particle Physics, along with their properties, quantum numbers and decays. A quick comparison to previous lists can be found below.
 
-Please see [arXiv:2309.01737 (2022)](https://arxiv.org/abs/2309.01737) for details and cite when using the list.
-
-<br>
+The list is provided in the appropriate format to be used in [CCAKE](https://github.com/the-nuclear-confectionery/CCAKE.git), [Thermal-FIST](https://github.com/vlvovch/Thermal-FIST),
+[SMASH](https://github.com/smash-transport/smash), and [Pythia8](https://pythia.org/).
 
 ## Attribution
 
