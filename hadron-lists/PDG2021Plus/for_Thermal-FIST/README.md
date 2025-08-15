@@ -6,9 +6,9 @@
 
 - Equation of State computation
 - Hadron yield (ratios) thermal fits for heavy-ions
-- Monte Carlo event generation
+- Monte Carlo event generation through Blast-Wave Models
 
-among applications.
+among other applications.
 
 ## List and Decays files
 
