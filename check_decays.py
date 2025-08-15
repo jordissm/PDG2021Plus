@@ -2,31 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """
-Validate a decay table against a SMASH-like particle list.
-
-Inputs
-------
-1) Particle list file (e.g., list.dat as shown)
-2) Decay table in your custom format (blocks with PDG, #channels, then BR + daughters)
-
-Checks
-------
-- Branching ratios in each block are within [0, 1] and sum to ~1
-- Conservation of Q, B, S, C for every decay channel
-- All PDG IDs are known (anti-particles auto-supported via sign flip)
-- Count of channels matches declared number
-- Optional: warn/error if a 'stable' particle has decays
+check_decays.py — Validate decay tables for Thermal-FIST or SMASH formats, with a compact summary.
 
 Usage
 -----
-  ./check_decays.py --plist list.dat --decays decays.txt
+  ./check_decays.py --particle-list /path/to/particle/list --decays /path/to/decays/file --format {Thermal-FIST|SMASH}
+
 Options
 -------
-  --abs-tol-br  5e-4   | absolute tolerance for sum(BR)≈1
-  --rel-tol-br  1e-6   | relative tolerance for sum(BR)≈1
-  --strict-stable       | treat decays of stable=1 parents as an error (default: warn)
-  --no-BSCC             | only check charge conservation (skip B,S,C)
-  --show-ok             | print a success line on pass
+  --err-br-tol FLOAT   : error tolerance for |sum(BR)-1| (default: 1e-2)
+  --warn-br-tol FLOAT  : warning tolerance for |sum(BR)-1| (default: 1e-6)
+  --strict-stable      : Thermal-FIST only; stable=1 with decays -> error (default warn)
+  --no-B-conservation   : disable baryon number conservation checks
+  --no-Q-conservation   : disable electric charge conservation checks
+  --no-S-conservation   : disable strangeness conservation checks
+  --no-C-conservation   : disable charm number conservation checks
+  --summary-only       : suppress detailed messages, show only the summary
+  --no-rich            : disable rich output even if available
+
 Exit codes
 ----------
   0 = all checks passed
@@ -35,11 +28,22 @@ Exit codes
 
 from __future__ import annotations
 import sys
-import math
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
+
+# -------- Optional rich pretty output --------
+_RICH_AVAILABLE = False
+try:
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.rule import Rule
+    from rich.text import Text
+    _RICH_AVAILABLE = True
+except Exception:
+    Console = None
 
 # ------------------------------ Data types ------------------------------ #
 
@@ -53,109 +57,172 @@ class QN:
 @dataclass(frozen=True)
 class Particle:
     pdg: int
-    name: str
-    stable: int
-    mass: float
-    qn: QN
+    name: Optional[str]        # None when not relevant
+    stable: Optional[int]      # None for SMASH
+    mass: Optional[float]
+    qn: Optional[QN]           # None for SMASH
 
 @dataclass
-class Channel:
+class ChannelPDG:
     br: float
     daughters: List[int]
 
 @dataclass
-class DecayBlock:
+class ChannelName:
+    br: float
+    L: Optional[int]
+    daughters: List[str]
+
+@dataclass
+class DecayBlockPDG:
     parent: int
-    channels: List[Channel]
+    channels: List[ChannelPDG]
 
-# ------------------------------ Parsing ------------------------------ #
+@dataclass
+class DecayBlockName:
+    parent_name: str
+    channels: List[ChannelName]
 
-def parse_particle_list(plist_path: Path) -> Dict[int, Particle]:
+@dataclass
+class ValidationReport:
+    ok: bool
+    # messages
+    warnings: List[str]
+    errors: List[str]
+    # metrics
+    parents_checked: int
+    channels_checked: int
+    br_sum_violations: int
+    br_sum_error_count: int
+    br_sum_warning_count: int
+    unknown_parent_count: int
+    unknown_daughter_count: int
+    br_out_of_range_count: int
+    empty_daughters_count: int
+    baryon_number_violations: int
+    electric_charge_violations: int
+    strangeness_violations: int
+    charm_number_violations: int
+    stable_mismatch_count: int
+
+# ------------------------------ Utilities ------------------------------ #
+
+def strip_comment(line: str) -> str:
+    return line.split("#", 1)[0].strip()
+
+def normspace(s: str) -> str:
+    return " ".join(s.split())
+
+def canon_name(s: str) -> str:
+    return normspace(s)
+
+def _inc(d: dict, k: str, v: int = 1) -> None:
+    d[k] = d.get(k, 0) + v
+
+# ------------------------------ Parsing: PARTICLE LISTS ------------------------------ #
+
+def parse_particle_list_thermal(particle_list_path: Path) -> Dict[int, Particle]:
     """
-    Parse SMASH-style list.dat.
-    Expected columns (whitespace separated):
-    pdgid, name, stable, mass[GeV], degeneracy, statistics, B, Q, S, C, |S|, |C|, width[GeV], threshold[GeV]
-    Lines starting with '#' or blank are ignored.
+    Thermal-FIST list.dat style:
+    pdgid name stable mass[GeV] degeneracy statistics B Q S C |S| |C| width[GeV] threshold[GeV]
     """
     particles: Dict[int, Particle] = {}
-    for raw in plist_path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
+    for raw in particle_list_path.read_text(encoding="utf-8").splitlines():
+        line = strip_comment(raw)
+        if not line:
             continue
         parts = line.split()
-        # handle malformed or header-like lines gracefully
+        # Expect at least through C (index 9)
         try:
             pdg = int(parts[0])
-        except Exception:
-            continue
-        # name is the 2nd token (no spaces in provided sample)
-        try:
             name = parts[1]
             stable = int(parts[2])
             mass = float(parts[3])
-            # parts[4], parts[5] = degeneracy, statistics (unused here)
-            B = int(parts[6])
-            Q = int(parts[7])
-            S = int(parts[8])
-            C = int(parts[9])
-        except Exception as e:
-            raise ValueError(f"Malformed particle list line:\n{raw}") from e
-
-        particles[pdg] = Particle(
-            pdg=pdg,
-            name=name,
-            stable=stable,
-            mass=mass,
-            qn=QN(B=B, Q=Q, S=S, C=C),
-        )
+            B = int(parts[6]); Q = int(parts[7]); S = int(parts[8]); C = int(parts[9])
+        except Exception:
+            continue  # header/malformed
+        particles[pdg] = Particle(pdg=pdg, name=name, stable=stable, mass=mass, qn=QN(B=B, Q=Q, S=S, C=C))
     if not particles:
-        raise ValueError(f"No particles parsed from {plist_path}")
+        raise ValueError(f"No particles parsed from '{particle_list_path}'.")
     return particles
 
-def parse_decay_table(decays_path: Path) -> List[DecayBlock]:
+def parse_particle_list_smash(particle_list_path: Path) -> Tuple[Dict[int, Particle], Dict[str, List[int]]]:
     """
-    Parse the custom decay table format:
+    SMASH Particles style:
+    NAME MASS WIDTH PARITY PDG [PDG...]
+    """
+    pdg_map: Dict[int, Particle] = {}
+    name_to_pdgs: Dict[str, List[int]] = {}
+    for raw in particle_list_path.read_text(encoding="utf-8").splitlines():
+        line = strip_comment(raw)
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) < 5:
+            continue
+        name = canon_name(parts[0])
+        try:
+            mass = float(parts[1])
+        except Exception:
+            continue
+        pdgs: List[int] = []
+        ok_tail = True
+        for tok in parts[4:]:
+            try:
+                pdgs.append(int(tok))
+            except Exception:
+                ok_tail = False
+                break
+        if not ok_tail or not pdgs:
+            continue
+        name_to_pdgs.setdefault(name, [])
+        for pdg in pdgs:
+            name_to_pdgs[name].append(pdg)
+            if pdg not in pdg_map:
+                pdg_map[pdg] = Particle(pdg=pdg, name=name, stable=None, mass=mass, qn=None)
+    if not pdg_map:
+        raise ValueError(f"No particles parsed from '{particle_list_path}'.")
+    return pdg_map, name_to_pdgs
+
+# ------------------------------ Parsing: DECAY LISTS ------------------------------ #
+
+def parse_decays_thermal(decays_path: Path) -> List[DecayBlockPDG]:
+    """
+    PDG-based format:
       parent
       n_channels
-      br  d1 d2 ...
+      BR  d1 d2 ...
       ...
     """
-    txt = decays_path.read_text(encoding="utf-8")
-
-    def strip_comment(s: str) -> str:
-        return s.split("#", 1)[0].strip()
-
     tokens: List[str] = []
-    for raw in txt.splitlines():
+    for raw in decays_path.read_text(encoding="utf-8").splitlines():
         s = strip_comment(raw)
         if s:
             tokens.append(s)
 
     i = 0
     n = len(tokens)
-    blocks: List[DecayBlock] = []
+    blocks: List[DecayBlockPDG] = []
 
     def need(cond: bool, msg: str):
         if not cond:
             raise ValueError(msg)
 
     while i < n:
-        need(i < n, "Unexpected EOF while reading parent PDG")
         parent_str = tokens[i]; i += 1
         need(parent_str.lstrip("-").isdigit(), f"Expected PDG ID, got '{parent_str}'")
         parent = int(parent_str)
 
         need(i < n, f"Missing number of channels after parent {parent}")
         nch_str = tokens[i]; i += 1
-        need(nch_str.isdigit(), f"Expected integer number of channels after parent {parent}, got '{nch_str}'")
+        need(nch_str.isdigit(), f"Expected integer number of channels after parent {parent}")
         nch = int(nch_str)
 
-        channels: List[Channel] = []
+        channels: List[ChannelPDG] = []
         for k in range(nch):
-            need(i < n, f"Missing line for channel {k+1}/{nch} of parent {parent}")
-            parts = tokens[i].split()
-            i += 1
-            need(len(parts) >= 2, f"[PDG {parent}] Channel {k+1}: must have BR and >=1 daughter")
+            need(i < n, f"Missing channel {k+1}/{nch} for parent {parent}")
+            parts = tokens[i].split(); i += 1
+            need(len(parts) >= 2, f"[PDG {parent}] Channel {k+1}: need BR and ≥1 daughter")
             try:
                 br = float(parts[0])
             except Exception:
@@ -163,171 +230,491 @@ def parse_decay_table(decays_path: Path) -> List[DecayBlock]:
             try:
                 daughters = [int(x) for x in parts[1:]]
             except Exception:
-                raise ValueError(f"[PDG {parent}] Channel {k+1}: invalid daughter list '{' '.join(parts[1:])}'")
-            channels.append(Channel(br=br, daughters=daughters))
-
-        blocks.append(DecayBlock(parent=parent, channels=channels))
-
+                raise ValueError(f"[PDG {parent}] Channel {k+1}: invalid daughters '{' '.join(parts[1:])}'")
+            channels.append(ChannelPDG(br=br, daughters=daughters))
+        blocks.append(DecayBlockPDG(parent=parent, channels=channels))
     return blocks
 
-# ------------------------------ Utilities ------------------------------ #
-
-def almost_equal(a: float, b: float, tol_abs: float, tol_rel: float) -> bool:
-    return abs(a - b) <= max(tol_abs, tol_rel * max(1.0, abs(a), abs(b)))
-
-def get_qn(particles: Dict[int, Particle], pdg: int) -> QN:
+def parse_decays_smash(decays_path: Path) -> List[DecayBlockName]:
     """
-    Fetch quantum numbers for PDG, inferring anti-particles by sign flip
-    on (B, Q, S, C) if only |pdg| is present.
+    SMASH 'Decays' style:
+      <ParentName>
+      <BR> <L> <d1> <d2> ...
+      (blank/comment lines ignored; new parent starts with a non-number token)
     """
-    if pdg in particles:
-        return particles[pdg].qn
+    blocks: List[DecayBlockName] = []
+    lines = decays_path.read_text(encoding="utf-8").splitlines()
+
+    parent: Optional[str] = None
+    current: List[ChannelName] = []
+
+    def flush():
+        nonlocal parent, current, blocks
+        if parent is not None:
+            blocks.append(DecayBlockName(parent_name=parent, channels=current))
+        parent = None
+        current = []
+
+    for raw in lines:
+        line = strip_comment(raw)
+        if not line:
+            continue
+        head = line.split()[0]
+        # Channel line starts with float
+        is_channel = False
+        try:
+            float(head); is_channel = True
+        except Exception:
+            is_channel = False
+
+        if not is_channel:
+            flush()
+            parent = canon_name(line)
+            continue
+
+        parts = line.split()
+        if len(parts) < 3:
+            raise ValueError(f"[{parent}] Invalid channel line: '{line}'")
+        br = float(parts[0])
+        try:
+            L = int(parts[1])
+        except Exception:
+            L = None
+        daughters = [canon_name(x) for x in parts[2:]]
+        current.append(ChannelName(br=br, L=L, daughters=daughters))
+
+    flush()
+    return blocks
+
+# ------------------------------ Validation helpers ------------------------------ #
+
+def _classify_and_add_msg(errors: List[str], msg: str) -> None:
+    """
+    Adds the message to errors. We keep plain strings but later indent specific categories.
+    """
+    errors.append(msg)
+
+# ------------------------------ Validation: THERMAL ------------------------------ #
+
+def get_qn_thermal(particles: Dict[int, Particle], pdg: int) -> QN:
+    # Exact PDG match
+    p = particles.get(pdg)
+    if p is not None and p.qn is not None:
+        return p.qn
+
+    # Fallback: use |pdg| and flip quantum numbers for antiparticles
     apdg = abs(pdg)
-    if apdg in particles:
-        base = particles[apdg].qn
+    p_abs = particles.get(apdg)
+    if p_abs is not None and p_abs.qn is not None:
+        base = p_abs.qn
         sgn = 1 if pdg > 0 else -1
         return QN(B=sgn * base.B, Q=sgn * base.Q, S=sgn * base.S, C=sgn * base.C)
-    raise KeyError(f"Unknown PDG ID {pdg}")
 
-def get_stable_flag(particles: Dict[int, Particle], pdg: int) -> int:
-    if pdg in particles:
-        return particles[pdg].stable
+    raise KeyError(f"Unknown PDG {pdg}")
+
+def get_stable_thermal(particles: Dict[int, Particle], pdg: int) -> int:
+    # Exact PDG match
+    p = particles.get(pdg)
+    if p is not None and p.stable is not None:
+        return int(p.stable)
+
+    # Fallback: use |pdg|
     apdg = abs(pdg)
-    if apdg in particles:
-        return particles[apdg].stable  # stable flag is same for anti
-    raise KeyError(f"Unknown PDG ID {pdg}")
+    p_abs = particles.get(apdg)
+    if p_abs is not None and p_abs.stable is not None:
+        return int(p_abs.stable)
 
-# ------------------------------ Validation ------------------------------ #
+    raise KeyError(f"Unknown PDG {pdg}")
 
-def validate(
+
+def validate_thermal(
     particles: Dict[int, Particle],
-    blocks: List[DecayBlock],
-    abs_tol_br: float = 5e-4,
-    rel_tol_br: float = 1e-6,
-    check_BSCC: bool = True,
-    strict_stable: bool = False,
-) -> Tuple[bool, List[str]]:
+    blocks: List[DecayBlockPDG],
+    err_br_tol: float,
+    warn_br_tol: float,
+    strict_stable: bool,
+    check_B: bool,
+    check_Q: bool,
+    check_S: bool,
+    check_C: bool,
+) -> ValidationReport:
     errors: List[str] = []
     warnings: List[str] = []
+    metrics = {
+        "parents_checked": len(blocks),
+        "channels_checked": 0,
+        "br_sum_violations": 0,
+        "br_sum_error_count": 0,
+        "br_sum_warning_count": 0,
+        "unknown_parent_count": 0,
+        "unknown_daughter_count": 0,
+        "br_out_of_range_count": 0,
+        "empty_daughters_count": 0,
+        "baryon_number_violations": 0,
+        "electric_charge_violations": 0,
+        "strangeness_violations": 0,
+        "charm_number_violations": 0,
+        "stable_mismatch_count": 0,
+    }
 
-    # Index for quick lookup of parents defined in decays
     parents_in_list = set(particles.keys()) | {-k for k in particles.keys()}
 
+    # Loop over decay blocks
     for blk in blocks:
-        # Parent existence
         if blk.parent not in parents_in_list and abs(blk.parent) not in particles:
-            errors.append(f"[PDG {blk.parent}] Parent not found in particle list.")
-            # We still try other checks to report more issues.
+            _classify_and_add_msg(errors, f"[PDG {blk.parent}] Parent not found in particle list.")
+            _inc(metrics, "unknown_parent_count")
 
-        # Stable flag vs decays
+        # Stable vs decays
         try:
-            stable = get_stable_flag(particles, blk.parent)
+            stable = get_stable_thermal(particles, blk.parent)
             if stable == 1 and len(blk.channels) > 0:
+                _inc(metrics, "stable_mismatch_count")
                 msg = f"[PDG {blk.parent}] has decays listed but is marked stable in particle list."
                 (errors if strict_stable else warnings).append(msg)
         except KeyError as e:
-            errors.append(f"[PDG {blk.parent}] {e}")
+            _classify_and_add_msg(errors, f"[PDG {blk.parent}] {e}")
+            _inc(metrics, "unknown_parent_count")
 
-        # BR sanity + sum
-        total_br = 0.0
+        # BR checks
+        total = 0.0
+        # Loop over decay channels
         for idx, ch in enumerate(blk.channels, start=1):
+            _inc(metrics, "channels_checked")
+            # Check if BR is valid
             if not (0.0 <= ch.br <= 1.0):
-                errors.append(f"[PDG {blk.parent}] Channel {idx}: BR out of range: {ch.br}")
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: BR out of range {ch.br}")
+                _inc(metrics, "br_out_of_range_count")
+            # Check if number of daughters is valid
             if len(ch.daughters) == 0:
-                errors.append(f"[PDG {blk.parent}] Channel {idx}: no daughters listed")
-            total_br += ch.br
-        if not almost_equal(total_br, 1.0, abs_tol_br, rel_tol_br):
-            errors.append(f"[PDG {blk.parent}] Sum of BRs = {total_br:.6f} (≠ 1.0)")
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: no daughters")
+                _inc(metrics, "empty_daughters_count")
+            total += ch.br
 
-        # Conservation laws per channel
+        # Check if BR sum is valid
+        delta = abs(total - 1.0)
+        if delta > err_br_tol:
+            _classify_and_add_msg(errors, f"[PDG {blk.parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > error tol {err_br_tol}")
+            _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_error_count")
+        elif delta > warn_br_tol:
+            warnings.append(f"[PDG {blk.parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > warning tol {warn_br_tol}")
+            _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_warning_count")
+
+        # Conservation laws
         try:
-            qn_parent = get_qn(particles, blk.parent)
+            qnp = get_qn_thermal(particles, blk.parent)
         except KeyError as e:
-            errors.append(f"[PDG {blk.parent}] {e}")
-            # Can't check conservation without parent QNs
+            _classify_and_add_msg(errors, f"[PDG {blk.parent}] {e}")
             continue
 
         for idx, ch in enumerate(blk.channels, start=1):
-            unknowns: List[int] = []
             B = Q = S = C = 0
+            unknowns: List[int] = []
             for d in ch.daughters:
                 try:
-                    q = get_qn(particles, d)
+                    q = get_qn_thermal(particles, d)
                 except KeyError:
                     unknowns.append(d)
                     continue
-                B += q.B
-                Q += q.Q
-                S += q.S
-                C += q.C
-
+                B += q.B; Q += q.Q; S += q.S; C += q.C
             if unknowns:
-                errors.append(f"[PDG {blk.parent}] Channel {idx}: Unknown daughter PDG IDs {unknowns}")
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: Unknown daughter PDG IDs {unknowns}")
+                _inc(metrics, "unknown_daughter_count", len(unknowns))
                 continue
+            if qnp.B != B:
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: baryon number not conserved (B_parent={qnp.B}, B_daughters={B})")
+                _inc(metrics, "baryon_number_violations")
+            if qnp.Q != Q:
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: electric charge not conserved (Q_parent={qnp.Q}, Q_daughters={Q})")
+                _inc(metrics, "electric_charge_violations")
+            if qnp.S != S:
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: strangeness not conserved (S_parent={qnp.S}, S_daughters={S})")
+                _inc(metrics, "strangeness_violations")
+            if qnp.C != C:
+                _classify_and_add_msg(errors, f"[PDG {blk.parent}] Channel {idx}: charm number not conserved (C_parent={qnp.C}, C_daughters={C})")
+                _inc(metrics, "charm_number_violations")
 
-            # Always check charge; optionally others
-            if qn_parent.Q != Q:
-                errors.append(
-                    f"[PDG {blk.parent}] Channel {idx}: charge not conserved "
-                    f"(parent Q={qn_parent.Q}, daughters Q={Q}) daughters={ch.daughters}"
-                )
-            if check_BSCC:
-                if qn_parent.B != B:
-                    errors.append(
-                        f"[PDG {blk.parent}] Channel {idx}: baryon number not conserved "
-                        f"(parent B={qn_parent.B}, daughters B={B})"
-                    )
-                if qn_parent.S != S:
-                    errors.append(
-                        f"[PDG {blk.parent}] Channel {idx}: strangeness not conserved "
-                        f"(parent S={qn_parent.S}, daughters S={S})"
-                    )
-                if qn_parent.C != C:
-                    errors.append(
-                        f"[PDG {blk.parent}] Channel {idx}: charm not conserved "
-                        f"(parent C={qn_parent.C}, daughters C={C})"
-                    )
 
     ok = len(errors) == 0
-    messages = (["All checks passed."] if ok else errors) + (warnings if ok else warnings)
-    return ok, messages
+    return ValidationReport(
+        ok=ok,
+        errors=errors,
+        warnings=warnings,
+        **metrics,
+    )
+
+# ------------------------------ Validation: SMASH ------------------------------ #
+
+def validate_smash(
+    pdg_map: Dict[int, Particle],
+    name_to_pdgs: Dict[str, List[int]],
+    blocks: List[DecayBlockName],
+    err_br_tol: float,
+    warn_br_tol: float,
+) -> ValidationReport:
+    errors: List[str] = []
+    warnings: List[str] = []
+    metrics = {
+        "parents_checked": len(blocks),
+        "channels_checked": 0,
+        "br_sum_violations": 0,
+        "br_sum_error_count": 0,
+        "br_sum_warning_count": 0,
+        "unknown_parent_count": 0,
+        "unknown_daughter_count": 0,
+        "br_out_of_range_count": 0,
+        "empty_daughters_count": 0,
+        "baryon_number_violations": 0,
+        "electric_charge_violations": 0,
+        "strangeness_violations": 0,
+        "charm_number_violations": 0,
+        "stable_mismatch_count": 0,
+    }
+
+    known_names = set(name_to_pdgs.keys())
+
+    for blk in blocks:
+        parent = blk.parent_name
+        if parent not in known_names:
+            _classify_and_add_msg(errors, f"[{parent}] Parent name not found in particle list.")
+            _inc(metrics, "unknown_parent_count")
+        total = 0.0
+
+        for idx, ch in enumerate(blk.channels, start=1):
+            _inc(metrics, "channels_checked")
+            if not (0.0 <= ch.br <= 1.0):
+                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: BR out of range {ch.br}")
+                _inc(metrics, "br_out_of_range_count")
+            if len(ch.daughters) == 0:
+                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: no daughters")
+                _inc(metrics, "empty_daughters_count")
+            missing = [d for d in ch.daughters if d not in known_names]
+            if missing:
+                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: unknown daughter names {missing}")
+                _inc(metrics, "unknown_daughter_count", len(missing))
+            total += ch.br
+
+        delta = abs(total - 1.0)
+        if delta > err_br_tol:
+            _classify_and_add_msg(errors, f"[{parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > error tol {err_br_tol}")
+            _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_error_count")
+        elif delta > warn_br_tol:
+            warnings.append(f"[{parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > warning tol {warn_br_tol}")
+            _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_warning_count")
+
+    ok = len(errors) == 0
+    return ValidationReport(
+        ok=ok,
+        errors=errors,
+        warnings=warnings,
+        **metrics,                                                                      # type: ignore[arg-type]
+    )
+
+# ------------------------------ Pretty printing ------------------------------ #
+
+_ERR_TAGS = (
+    "Parent not found", 
+    "Unknown daughter", 
+    "No daughters",
+    "Charge not conserved", 
+    "Baryon number not conserved",
+    "Strangeness not conserved", 
+    "Charm number not conserved",
+    "BR out of range", "BR sum ="
+)
+
+def _indent_lines(lines: List[str], prefix: str = "  • ") -> List[str]:
+    return [f"{prefix}{ln}" for ln in lines]
+
+def print_detailed(report: ValidationReport, use_rich: bool) -> None:
+    # Partition errors/warnings to indent everything inside their sections
+    err_lines = report.errors
+    warn_lines = report.warnings
+
+    if use_rich:
+        console = Console()                                                             # type: ignore
+        if warn_lines:
+            console.print(Rule("[bold yellow]Warnings[/bold yellow]"))                  # type: ignore
+            for ln in _indent_lines(warn_lines):
+                console.print(ln, style="yellow")
+        if err_lines:
+            console.print(Rule("[bold red]Errors[/bold red]"))                          # type: ignore
+            for ln in _indent_lines(err_lines):
+                console.print(ln, style="red")
+        if not err_lines and not warn_lines:
+            console.print("[bold green]No errors or warnings.[/bold green]")
+    else:
+        if warn_lines:
+            print("Warnings:", file=sys.stderr)
+            for ln in _indent_lines(warn_lines, prefix="  - "):
+                print(ln)
+        if err_lines:
+            print("Errors:", file=sys.stderr)
+            for ln in _indent_lines(err_lines, prefix="  - "):
+                print(ln, file=sys.stderr)
+        if not err_lines and not warn_lines:
+            print("No errors or warnings.")
+
+def print_summary(report: ValidationReport, format_name: str, use_rich: bool) -> None:
+    if use_rich:
+        console = Console()                                                             # type: ignore
+        status_style = "bold green" if report.ok else "bold red"
+        panel_title = f"[{status_style}]STATUS: {'OK' if report.ok else 'FAIL'}[/]"
+        table = Table(show_header=True, header_style="bold")                            # type: ignore
+        table.add_column("Metric", justify="left")
+        table.add_column("Value", justify="right")
+
+        rows = [
+            ("Parents checked", report.parents_checked),
+            ("Channels checked", report.channels_checked),
+            ("Warnings", len(report.warnings)),
+            ("Total BR sum violations", report.br_sum_violations),
+            ("  ↳ BR sum warnings", report.br_sum_warning_count),
+            ("Errors", len(report.errors)),
+            ("  ↳ BR sum errors", report.br_sum_error_count),
+            ("  ↳ Unknown parents", report.unknown_parent_count),
+            ("  ↳ Unknown daughters", report.unknown_daughter_count),
+            ("  ↳ BR out of range", report.br_out_of_range_count),
+            ("  ↳ Empty daughter lists", report.empty_daughters_count),
+            ("  ↳ Baryon number violations", report.baryon_number_violations),
+            ("  ↳ Electric charge violations", report.electric_charge_violations),
+            ("  ↳ Strangeness violations", report.strangeness_violations),
+            ("  ↳ Charm number violations", report.charm_number_violations),
+            ("  ↳ Stable/unstable mismatches", report.stable_mismatch_count),
+        ]
+        for k, v in rows:
+            table.add_row(k, str(v))
+
+        console.print(Panel(table, title=panel_title, border_style="cyan"))             # type: ignore
+    else:
+        print(f"=== Summary ({format_name.upper()}) ===")
+        print(f"STATUS: {'OK' if report.ok else 'FAIL'}")
+        print(f"- Parents checked:            {report.parents_checked}")
+        print(f"- Channels checked:           {report.channels_checked}")
+        print(f"- Warnings:                   {len(report.warnings)}")
+        print(f"- Total BR sum violations:    {report.br_sum_violations}")
+        print(f"    ↳ BR sum warnings:        {report.br_sum_warning_count}")
+        print(f"- Errors:                     {len(report.errors)}")
+        print(f"    ↳ BR sum errors:          {report.br_sum_error_count}")
+        print(f"    ↳ Unknown parents:            {report.unknown_parent_count}")
+        print(f"    ↳ Unknown daughters:          {report.unknown_daughter_count}")
+        print(f"    ↳ BR out of range:            {report.br_out_of_range_count}")
+        print(f"    ↳ Empty daughter lists:       {report.empty_daughters_count}")
+        print(f"    ↳ Baryon number violations:          {report.baryon_number_violations}")
+        print(f"    ↳ Electric charge violations:          {report.electric_charge_violations}")
+        print(f"    ↳ Strangeness violations:     {report.strangeness_violations}")
+        print(f"    ↳ Charm number violations:           {report.charm_number_violations}")
+        print(f"    ↳ Stable/unstable mismatches:          {report.stable_mismatch_count}")
 
 # ------------------------------ CLI ------------------------------ #
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Check decay table consistency against a particle list.")
-    ap.add_argument("--plist", type=Path, required=True, help="Path to particle list file (e.g., list.dat)")
-    ap.add_argument("--decays", type=Path, required=True, help="Path to decay table")
-    ap.add_argument("--abs-tol-br", type=float, default=5e-4, help="Absolute tolerance for sum(BR)=1")
-    ap.add_argument("--rel-tol-br", type=float, default=1e-6, help="Relative tolerance for sum(BR)=1")
-    ap.add_argument("--strict-stable", action="store_true", help="Error (not warn) if stable=1 has decays")
-    ap.add_argument("--no-BSCC", action="store_true", help="Only check charge; skip B,S,C conservation")
-    ap.add_argument("--show-ok", action="store_true", help="Print a success message when valid")
+
+    ap = argparse.ArgumentParser(description="Validate particle decay tables (Thermal-FIST or SMASH).")
+
+    # Required arguments
+    ap.add_argument("-p", "--particle-list", type=Path, required=True, help="Path to particle list file")
+    # ap.add_argument("--particle-list-format", choices=["Thermal-FIST", "SMASH"], required=True, help="Format of particle list")
+    ap.add_argument("-d", "--decays", type=Path, required=True, help="Path to decay list file")
+    # ap.add_argument("--decays-format", choices=["Thermal-FIST", "SMASH"], required=True, help="Format of decay list")
+    ap.add_argument("-f", "--format", choices=["Thermal-FIST", "SMASH"], required=True, help="Format of the input files")
+
+    # Optional arguments
+    # Tolerance for BRs sum check
+    ap.add_argument("--err-br-tol", type=float, default=1e-2,
+                    help="ABS error tolerance for |sum(BR)-1| to count as ERROR (default: 1e-2 = 1%)")
+    ap.add_argument("--warn-br-tol", type=float, default=1e-6,
+                    help="ABS tolerance for |sum(BR)-1| to count as WARNING (default: 1e-6)")
+
+    # Stable conditions
+    ap.add_argument("--strict-stable", action="store_true", help="Flag particles marked as stable but with decays listed")
+
+    # Charge conservation
+    ap.add_argument("--no-B-conservation", action="store_true", help="Disable B conservation checks")
+    ap.add_argument("--no-Q-conservation", action="store_true", help="Disable Q conservation checks")
+    ap.add_argument("--no-S-conservation", action="store_true", help="Disable S conservation checks")
+    ap.add_argument("--no-C-conservation", action="store_true", help="Disable C conservation checks")
+
+    # Logging options    
+    ap.add_argument("--summary-only", action="store_true", help="Suppress detailed messages; show compact summary")
+    ap.add_argument("--no-rich", action="store_true", help="Disable rich output even if available")
+
+    # Parse arguments
     args = ap.parse_args(argv)
 
+    # Fix tolerances if needed
+    if args.warn_br_tol > args.err_br_tol:
+        print("[config] --warn-br-tol is greater than --err-br-tol; adjusting warn to equal err.",
+              file=sys.stderr)
+        args.warn_br_tol = args.err_br_tol
+
+    # Determine rich output usage
+    use_rich = (_RICH_AVAILABLE and (not args.no_rich))
+
+    # Parse particle list
     try:
-        particles = parse_particle_list(args.plist)
+        if args.format == "Thermal-FIST":
+            particles = parse_particle_list_thermal(args.particle_list)
+            pdg_map = particles
+            name_to_pdgs = None
+        elif args.format == "SMASH":
+            pdg_map, name_to_pdgs = parse_particle_list_smash(args.particle_list)
+            particles = None
+        else:
+            print("[error] Unsupported format.", file=sys.stderr)
+            return 1
     except Exception as e:
         print(f"[particle list parse error] {e}", file=sys.stderr)
         return 1
+
+    # Parse decay list
     try:
-        blocks = parse_decay_table(args.decays)
+        if args.format == "Thermal-FIST":
+            dec_blocks_pdg = parse_decays_thermal(args.decays)
+            dec_blocks_name = None
+        elif args.format == "SMASH":
+            dec_blocks_name = parse_decays_smash(args.decays)
+            dec_blocks_pdg = None
+        else:
+            print("[error] Unsupported format.", file=sys.stderr)
+            return 1
     except Exception as e:
-        print(f"[decay table parse error] {e}", file=sys.stderr)
+        print(f"[decay list parse error] {e}", file=sys.stderr)
         return 1
 
-    ok, messages = validate(
-        particles=particles,
-        blocks=blocks,
-        abs_tol_br=args.abs_tol_br,
-        rel_tol_br=args.rel_tol_br,
-        check_BSCC=not args.no_BSCC,
-        strict_stable=args.strict_stable,
-    )
-    stream = sys.stdout if ok else sys.stderr
-    for m in messages:
-        print(m, file=stream)
-    return 0 if ok else 1
+    # Validate
+    if args.format == "Thermal-FIST":
+        report = validate_thermal(
+            particles=particles,                                                        # type: ignore
+            blocks=dec_blocks_pdg,                                                      # type: ignore
+            err_br_tol=args.err_br_tol,
+            warn_br_tol=args.warn_br_tol,
+            strict_stable=args.strict_stable,
+            check_B=not args.no_B_conservation,
+            check_Q=not args.no_Q_conservation,
+            check_S=not args.no_S_conservation,
+            check_C=not args.no_C_conservation,
+        )
+    elif args.format == "SMASH":
+        report = validate_smash(
+            pdg_map=pdg_map,
+            name_to_pdgs=name_to_pdgs,                                                  # type: ignore
+            blocks=dec_blocks_name,                                                     # type: ignore
+            err_br_tol=args.err_br_tol,
+            warn_br_tol=args.warn_br_tol,
+        )
+    else:
+        report = None
+        print("[error] Unsupported format.", file=sys.stderr)
+
+    # Detailed output (unless summary-only)
+    if not args.summary_only:
+        print_detailed(report, use_rich=use_rich)                                       # type: ignore
+
+    # Compact summary (always)
+    print_summary(report, args.format, use_rich=use_rich)                               # type: ignore
+
+    return 0 if report.ok else 1
 
 if __name__ == "__main__":
     sys.exit(main())
