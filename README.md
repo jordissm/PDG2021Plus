@@ -4,7 +4,7 @@
   <img
   src="misc/icon.png"\
   width="800"\
-  title="PDG21+"\
+  title="PDG2021+"\
   alt="Header that has the name 'PDG2021+' with colored particles on the background" unselectable="on">
 </p>
 
