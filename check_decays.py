@@ -29,9 +29,27 @@ Exit codes
 from __future__ import annotations
 import sys
 import argparse
+import numpy as np
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Set, Tuple, Optional
+
+# --- Ensure UTF-8 console output on all platforms ---
+def _ensure_utf8_stdio() -> None:
+    # Python 3.7+: reconfigure; fallback: wrap with TextIOWrapper
+    import io
+    for name in ("stdout", "stderr"):
+        stream = getattr(sys, name)
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            try:
+                wrapper = io.TextIOWrapper(stream.buffer, encoding="utf-8", errors="replace")
+                setattr(sys, name, wrapper)
+            except Exception:
+                pass
+
 
 # -------- Optional rich pretty output --------
 _RICH_AVAILABLE = False
@@ -113,11 +131,252 @@ def strip_comment(line: str) -> str:
 def normspace(s: str) -> str:
     return " ".join(s.split())
 
-def canon_name(s: str) -> str:
-    return normspace(s)
-
 def _inc(d: dict, k: str, v: int = 1) -> None:
     d[k] = d.get(k, 0) + v
+
+
+import unicodedata
+from typing import Dict, List, Set, Tuple, Optional
+
+# --- Normalization primitives (keep your existing alias and digit helpers alongside) ---
+
+# Aliases (e.g., νe in decays ↔ ve in table)
+_ALIAS_NAME: Dict[str, str] = {"νe": "ve", "ν_e": "ve", "nu_e": "ve", "nu e": "ve"}
+
+# Overbar/macron code points
+_ANTI_COMBINING = {0x0304, 0x0305, 0x033F}  # MACRON, OVERLINE, DOUBLE OVERLINE
+_ANTI_SPACING   = {0x00AF}                  # MACRON (spacing)
+
+# Charge symbols
+_PLUS_ASCII = "+"
+_MINUS_ASCII = "-"
+_MINUS_UNICODE = "−"  # U+2212
+_PLUS_SUPER = "⁺"
+_MINUS_SUPER = "⁻"
+_ZERO_ASCII = "0"
+_ZERO_SUPER = "⁰"
+
+# Subscript digit maps (keep if you already have these)
+_SUB_TO_ASCII = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
+_ASCII_TO_SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+def canon_name(s: str) -> str:
+    """Collapse whitespace and normalize Unicode lookalikes."""
+    return unicodedata.normalize("NFKC", " ".join(s.split()))
+
+def _remove_overbar(name: str) -> str:
+    """Strip overbar/macron (combining or spacing) anywhere in the string."""
+    if not name:
+        return name
+    decomp = unicodedata.normalize("NFKD", name)
+    cleaned = "".join(
+        ch for ch in decomp
+        if (ord(ch) not in _ANTI_COMBINING) and (ord(ch) not in _ANTI_SPACING)
+    )
+    return unicodedata.normalize("NFKC", cleaned)
+
+def _ascii_digits_to_subscripts_after_letter(s: str) -> str:
+    """convert ASCII digits to subscripts only when immediately after a letter (K1→K₁; (1270) unchanged)."""
+    out: List[str] = []
+    i, n = 0, len(s)
+    while i < n:
+        ch = s[i]
+        out.append(ch); i += 1
+        if ch.isalpha() and i < n and s[i].isdigit():
+            j = i
+            while j < n and s[j].isdigit():
+                out.append(s[j].translate(_ASCII_TO_SUB))
+                j += 1
+            i = j
+    return "".join(out)
+
+def _generate_digit_variants(key: str) -> List[str]:
+    """Return variants with subscript↔ASCII digits (K₁↔K1), preserving non-digit parts like (1270)."""
+    variants = [key]
+    sub_to_ascii = key.translate(_SUB_TO_ASCII)
+    if sub_to_ascii != key:
+        variants.append(sub_to_ascii)
+    ascii_to_sub = _ascii_digits_to_subscripts_after_letter(key)
+    if ascii_to_sub != key:
+        variants.append(ascii_to_sub)
+    if sub_to_ascii != key:
+        ascii_to_sub2 = _ascii_digits_to_subscripts_after_letter(sub_to_ascii)
+        if ascii_to_sub2 not in variants:
+            variants.append(ascii_to_sub2)
+    return variants
+
+# --- NEW: trailing-charge cluster parsing & variant generation ---
+
+def _parse_trailing_charge_cluster(name: str) -> Tuple[str, Optional[Tuple[str, int]]]:
+    """
+    Parse trailing charge cluster at end of the string.
+    Returns (base_name, (sign, magnitude)) where sign in {'+','-','0'} and magnitude in {1,2} (0→1).
+    Recognizes: '+', '++', '⁺', '⁺⁺', '-', '--', '−', '−−', '⁻', '⁻⁻', '0', '⁰'.
+    """
+    if not name:
+        return name, None
+    # Normalize lookalikes first (NFKC already applied via canon_name before this typically)
+    last = name[-1]
+    # zero
+    if last in (_ZERO_ASCII, _ZERO_SUPER):
+        return name[:-1], ("0", 1)
+
+    # collect trailing plus/minus marks (ASCII '+', '-', Unicode '−', superscript '⁺','⁻')
+    marks: List[str] = []
+    i = len(name) - 1
+    while i >= 0:
+        ch = name[i]
+        if ch in (_PLUS_ASCII, _PLUS_SUPER, _MINUS_ASCII, _MINUS_UNICODE, _MINUS_SUPER):
+            marks.append(ch)
+            i -= 1
+        else:
+            break
+
+    if not marks:
+        return name, None
+
+    # Limit magnitude to 1 or 2 (Δ family uses up to ±2)
+    cluster = "".join(reversed(marks))[:2]
+    # deduce sign if all marks are + or all are - (accept ASCII '-', Unicode '−', superscript '⁻' as minus)
+    if all(c in (_PLUS_ASCII, _PLUS_SUPER) for c in cluster):
+        mag = min(2, len(cluster))
+        return name[:-mag], ("+", mag)
+    if all(c in (_MINUS_ASCII, _MINUS_UNICODE, _MINUS_SUPER) for c in cluster):
+        mag = min(2, len(cluster))
+        return name[:-mag], ("-", mag)
+
+    # Mixed or unexpected pattern → treat as no charge cluster
+    return name, None
+
+def _charge_cluster_variants(base: str, sign: str, mag: int) -> List[str]:
+    """
+    For base name and sign ('+','-','0') with magnitude (1 or 2),
+    return variants using ASCII, Unicode minus, and superscripts.
+    """
+    out: List[str] = []
+    if sign == "0":
+        out.extend([base + _ZERO_ASCII, base + _ZERO_SUPER])
+    elif sign == "+":
+        plus_ascii = _PLUS_ASCII * mag
+        plus_super = _PLUS_SUPER * mag
+        out.extend([base + plus_ascii, base + plus_super])
+    elif sign == "-":
+        minus_ascii = _MINUS_ASCII * mag
+        minus_uni   = _MINUS_UNICODE * mag
+        minus_super = _MINUS_SUPER * mag
+        out.extend([base + minus_ascii, base + minus_uni, base + minus_super])
+    # dedup
+    seen: Set[str] = set()
+    return [k for k in out if (k not in seen and not seen.add(k))]
+
+def _default_charge_cluster_variants(base: str) -> List[str]:
+    """
+    Heuristic: if a bare name appears with no explicit charge, try the physically
+    standard charge for certain families. For Ω baryons, that is −1.
+    This also covers excited states like 'Ω(2012)'.
+    """
+    out: List[str] = []
+    if base and base[0] == "Ω":
+        # Try minus in ASCII, Unicode minus, and superscript forms
+        out.extend([base + "-", base + "−", base + "⁻"])
+    # de-dup preserving order
+    seen: Set[str] = set()
+    dedup: List[str] = []
+    for k in out:
+        if k not in seen:
+            seen.add(k)
+            dedup.append(k)
+    return dedup
+
+def _flip_charge(sign: str) -> Optional[str]:
+    if sign == "+": return "-"
+    if sign == "-": return "+"
+    if sign == "0": return "0"
+    return None
+
+def _candidate_lookup_keys(raw_name: str) -> List[str]:
+    """
+    (Updated) Robust candidate generator:
+      - exact + alias
+      - unbarred + alias
+      - digit-notation variants for all above
+      - if trailing charge cluster present → try base, same-charge, flipped-charge variants
+      - if NO trailing charge cluster present → try a default charge heuristic (e.g. Ω→Ω⁻)
+    """
+    n = canon_name(raw_name)
+    seeds: List[str] = [n]
+
+    alias = _ALIAS_NAME.get(n)
+    if alias:
+        seeds.append(alias)
+
+    unbar = _remove_overbar(n)
+    if unbar != n:
+        seeds.append(unbar)
+        alias_unbar = _ALIAS_NAME.get(unbar)
+        if alias_unbar:
+            seeds.append(alias_unbar)
+
+    keys: List[str] = []
+    # Base seeds and digit-notation variants
+    for seed in seeds:
+        keys.extend(_generate_digit_variants(seed))
+
+    # Handle trailing charge clusters on both original and unbarred forms
+    applied_default_for_uncharged = False
+    for seed in (n, unbar):
+        base, charge = _parse_trailing_charge_cluster(seed)
+        if charge is not None and base:
+            sign, mag = charge
+            # 1) multiplet base
+            keys.extend(_generate_digit_variants(base))
+            # 2) same-charge variants
+            for k in _charge_cluster_variants(base, sign, mag):
+                keys.extend(_generate_digit_variants(k))
+            # 3) flipped-charge variants
+            flip = _flip_charge(sign)
+            if flip is not None:
+                for k in _charge_cluster_variants(base, flip, mag):
+                    keys.extend(_generate_digit_variants(k))
+        elif base:
+            # No explicit charge: try default charge heuristic once.
+            if not applied_default_for_uncharged:
+                keys.extend(_generate_digit_variants(base))
+                for k in _default_charge_cluster_variants(base):
+                    keys.extend(_generate_digit_variants(k))
+                applied_default_for_uncharged = True
+
+    # de-dup preserving order
+    seen: Set[str] = set()
+    out: List[str] = []
+    for k in keys:
+        if k and k not in seen:
+            seen.add(k)
+            out.append(k)
+    return out
+
+def _is_known_name(name: str, known_names: Set[str]) -> bool:
+    return any(k in known_names for k in _candidate_lookup_keys(name))
+
+
+def _to_superscript_charge(name: str) -> str:
+    base, charge = _parse_trailing_charge_cluster(name)
+    if not charge or not base:
+        return name
+    sign, mag = charge
+    if sign == "+":
+        return base + ("⁺" * mag)
+    if sign == "-":
+        return base + ("⁻" * mag)
+    # sign == "0"
+    return base + "⁰"
+
+def pretty_particle(name: str) -> str:
+    # Start from your canonical token, then "beautify" for display.
+    n = _ascii_digits_to_subscripts_after_letter(name)  # K1 -> K₁ (but leaves (1270) intact)
+    n = _to_superscript_charge(n)                       # K- -> K⁻, Δ++ -> Δ⁺⁺
+    return n
+
 
 # ------------------------------ Parsing: PARTICLE LISTS ------------------------------ #
 
@@ -294,7 +553,7 @@ def _classify_and_add_msg(errors: List[str], msg: str) -> None:
     """
     errors.append(msg)
 
-# ------------------------------ Validation: THERMAL ------------------------------ #
+# ------------------------------ Validation: Thermal-FIST ------------------------------ #
 
 def get_qn_thermal(particles: Dict[int, Particle], pdg: int) -> QN:
     # Exact PDG match
@@ -464,50 +723,61 @@ def validate_smash(
         "unknown_daughter_count": 0,
         "br_out_of_range_count": 0,
         "empty_daughters_count": 0,
-        "baryon_number_violations": 0,
-        "electric_charge_violations": 0,
-        "strangeness_violations": 0,
-        "charm_number_violations": 0,
-        "stable_mismatch_count": 0,
+        "electric_charge_violations": np.nan,
+        "baryon_number_violations": np.nan,
+        "strangeness_violations": np.nan,
+        "charm_number_violations": np.nan,
+        "stable_mismatch_count": np.nan,
     }
 
-    known_names = set(name_to_pdgs.keys())
+    known_names: Set[str] = set(name_to_pdgs.keys())
 
     for blk in blocks:
         parent = blk.parent_name
-        if parent not in known_names:
-            _classify_and_add_msg(errors, f"[{parent}] Parent name not found in particle list.")
+        parent_disp = pretty_particle(parent)
+
+        if not _is_known_name(parent, known_names):
+            _classify_and_add_msg(errors, f"[{parent_disp}] Parent name not found in particle list.")
             _inc(metrics, "unknown_parent_count")
         total = 0.0
 
         for idx, ch in enumerate(blk.channels, start=1):
             _inc(metrics, "channels_checked")
             if not (0.0 <= ch.br <= 1.0):
-                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: BR out of range {ch.br}")
+                _classify_and_add_msg(errors, f"[{parent_disp}] Channel {idx}: BR out of range {ch.br}")
                 _inc(metrics, "br_out_of_range_count")
             if len(ch.daughters) == 0:
-                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: no daughters")
+                _classify_and_add_msg(errors, f"[{parent_disp}] Channel {idx}: no daughters")
                 _inc(metrics, "empty_daughters_count")
-            missing = [d for d in ch.daughters if d not in known_names]
+
+            missing = [d for d in ch.daughters if not _is_known_name(d, known_names)]
             if missing:
-                _classify_and_add_msg(errors, f"[{parent}] Channel {idx}: unknown daughter names {missing}")
+                missing_disp = [pretty_particle(d) for d in missing]
+                _classify_and_add_msg(errors, f"[{parent_disp}] Channel {idx}: unknown daughter names {missing_disp}")
                 _inc(metrics, "unknown_daughter_count", len(missing))
+
             total += ch.br
 
         delta = abs(total - 1.0)
         if delta > err_br_tol:
-            _classify_and_add_msg(errors, f"[{parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > error tol {err_br_tol}")
+            _classify_and_add_msg(
+                errors,
+                f"[{parent_disp}] BR sum = {total:.6f} (Δ={delta:.2e}) > error tol {err_br_tol}",
+            )
             _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_error_count")
         elif delta > warn_br_tol:
-            warnings.append(f"[{parent}] BR sum = {total:.6f} (Δ={delta:.2e}) > warning tol {warn_br_tol}")
+            warnings.append(
+                f"[{parent_disp}] BR sum = {total:.6f} (Δ={delta:.2e}) > warning tol {warn_br_tol}"
+            )
             _inc(metrics, "br_sum_violations"); _inc(metrics, "br_sum_warning_count")
+
 
     ok = len(errors) == 0
     return ValidationReport(
         ok=ok,
         errors=errors,
         warnings=warnings,
-        **metrics,                                                                      # type: ignore[arg-type]
+        **metrics,  # all ints; matches ValidationReport fields
     )
 
 # ------------------------------ Pretty printing ------------------------------ #
@@ -536,11 +806,11 @@ def print_detailed(report: ValidationReport, use_rich: bool) -> None:
         if warn_lines:
             console.print(Rule("[bold yellow]Warnings[/bold yellow]"))                  # type: ignore
             for ln in _indent_lines(warn_lines):
-                console.print(ln, style="yellow")
+                console.print(ln, style="yellow", markup=False)
         if err_lines:
             console.print(Rule("[bold red]Errors[/bold red]"))                          # type: ignore
             for ln in _indent_lines(err_lines):
-                console.print(ln, style="red")
+                console.print(ln, style="red", markup=False)
         if not err_lines and not warn_lines:
             console.print("[bold green]No errors or warnings.[/bold green]")
     else:
@@ -641,6 +911,8 @@ def main(argv=None) -> int:
 
     # Parse arguments
     args = ap.parse_args(argv)
+
+    _ensure_utf8_stdio()
 
     # Fix tolerances if needed
     if args.warn_br_tol > args.err_br_tol:
